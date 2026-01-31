@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
-device = 'cuda'
+import pandas as pd
+import json
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class GRUIntentClassifier(nn.Module):
     def __init__(self, vocab_size, embedding_dim, hidden_size, num_layers, num_classes, bidirectional=True):
         super(GRUIntentClassifier, self).__init__()
@@ -54,7 +56,35 @@ model = GRUIntentClassifier(30522,100, 256, 2, 26)
 
 # Load the state_dict, mapping to CPU if necessary (common when moving from Colab GPU)
 # Use weights_only=True for security and best practice
-model.load_state_dict(torch.load(PATH, map_location=torch.device('cpu'), weights_only=True))
+xx = model.load_state_dict(torch.load(PATH, map_location=torch.device('cpu'), weights_only=True))
 
 # Set the model to evaluation mode for inference
 model.eval()
+
+with open('id_to_label.json', 'r') as file:
+        id_to_label = json.load(file)
+
+from transformers import AutoTokenizer
+
+# Initialize a suitable tokenizer
+tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
+
+def predict_intent(sentence):
+    model.eval() # Set the model to evaluation mode
+    with torch.no_grad():
+        # Tokenize the input sentence
+        inputs = tokenizer(sentence, truncation=True, padding='max_length', max_length=200, return_tensors='pt')
+
+        # Move inputs to the correct device
+        input_ids = inputs['input_ids'].to(device)
+
+        # Get model predictions
+        outputs = model(input_ids)
+
+        # Get the predicted class ID
+        predicted_id = torch.argmax(outputs, dim=1).item()
+
+        # Convert ID back to label
+        predicted_label = id_to_label[str(predicted_id)]
+
+        return predicted_label
