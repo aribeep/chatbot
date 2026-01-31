@@ -56,7 +56,7 @@ model = GRUIntentClassifier(30522,100, 256, 2, 26)
 
 # Load the state_dict, mapping to CPU if necessary (common when moving from Colab GPU)
 # Use weights_only=True for security and best practice
-xx = model.load_state_dict(torch.load(PATH, map_location=torch.device('cpu'), weights_only=True))
+model.load_state_dict(torch.load(PATH, map_location=torch.device('cpu'), weights_only=True))
 
 # Set the model to evaluation mode for inference
 model.eval()

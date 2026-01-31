@@ -2,7 +2,12 @@ import streamlit as st
 from PIL import Image
 import io
 import base64
+import json
 from intent import predict_intent
+from sentiment import predict_sentiment
+
+with open('word2idx.json', 'r') as file:
+        word2idx = json.load(file)
 
 # Show title and description.
 st.title("Changi Virtual Assistant")
@@ -41,7 +46,7 @@ with tab1:
             
         with st.chat_message("assistant"):
             response = ""
-            response = "The intent is",predict_intent(prompt)
+            response = "The intent and sentiment is",predict_intent(prompt), predict_sentiment(prompt, word2idx)
             st.markdown(response)
         
         # Store the assistant's response
