@@ -2,8 +2,7 @@ import streamlit as st
 from PIL import Image
 import io
 import base64
-from intent import predict_intent
-from intent import models
+from intent import model
 
 # Show title and description.
 st.title("Changi Virtual Assistant")
@@ -39,12 +38,10 @@ with tab1:
         
         with st.chat_message("user"):
             st.markdown(prompt)
-            st.markdown(models)
             
         with st.chat_message("assistant"):
             response = ""
-            response = models
-            response += predict_intent(prompt)
+            response += model.eval()
             st.markdown(response)
         
         # Store the assistant's response
