@@ -52,7 +52,7 @@ class GRUIntentClassifier(nn.Module):
 PATH = "./CVNL_INTENT.pt"
 
 # Instantiate the model
-model = GRUIntentClassifier(30522,100, 256, 2, 26)
+model = GRUIntentClassifier(30522,100, 256, 4, 26)
 
 # Load the state_dict, mapping to CPU if necessary (common when moving from Colab GPU)
 # Use weights_only=True for security and best practice
