@@ -8,8 +8,17 @@ import json
 from intent import predict_intent
 from sentiment import predict_sentiment
 from aircraft import predict_aircraft
-from aircraft2 import predict_aircraft_variant_with_cam
+from aircraft2 import predict_aircraft_variant
+from flask import Flask, send_from_directory, render_template_string
+import os
 
+app = Flask(__name__)
+
+GRADCAM_DIR = os.path.join(os.path.dirname(__file__), "gradcam_outputs")
+os.makedirs(GRADCAM_DIR, exist_ok=True)
+@app.route("/gradcam/<filename>")
+def gradcam_file(filename):
+    return send_from_directory(GRADCAM_DIR, filename)
 with open('word2idx.json', 'r') as file:
         word2idx = json.load(file)
 
@@ -95,11 +104,23 @@ with tab2:
             st.markdown("Uploaded an image.")
 
         with st.chat_message("assistant"):
-            label, conf = predict_aircraft(temp_path), predict_aircraft_variant_with_cam(temp_path)
-            response = f"**Aircraft family:** {label}\n\n**Confidence:** {conf:.2%}"
-            st.markdown(response)
+            family_label, family_conf = predict_aircraft(temp_path)
+            variant_result = predict_aircraft_variant(
+            temp_path,
+                checkpoint_path="./aircraft_varient.pt",
+                variants_txt_path="variants.txt"
+        )           
 
-        # Store the assistant's response
+        response = (
+    f"**Aircraft family:** {family_label}\n"
+    f"**Family confidence:** {family_conf:.2%}\n\n"
+    f"**Predicted variant:** {variant_result['pred_top1']}\n\n"
+    f"**Top-3 variants:**\n"
+        )
+
+        for v in variant_result["top3"]:
+            response += f"- {v['label']} ({v['confidence']:.2%})\n"
+                # Store the assistant's response
         st.session_state.messages.append({
             "role": "assistant",
             "content": response,
