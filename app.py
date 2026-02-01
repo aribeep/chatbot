@@ -2,9 +2,12 @@ import streamlit as st
 from PIL import Image
 import io
 import base64
+import os
+import tempfile
 import json
 from intent import predict_intent
 from sentiment import predict_sentiment
+from aircraft import predict_aircraft
 
 with open('word2idx.json', 'r') as file:
         word2idx = json.load(file)
@@ -64,49 +67,49 @@ with tab2:
                 st.markdown(message["content"])
 
     uploaded_file = st.file_uploader(
-        "Choose an image file", 
+        "Choose an image file",
         type=["jpg", "jpeg", "png", "gif", "bmp"],
         help="Upload an image to analyze or discuss"
     )
+
     
+
     if uploaded_file is not None:
-        # Display the uploaded image
-        image = Image.open(uploaded_file)
-        st.image(image)
-        
-        # Convert image to base64 for storage
-        buffered = io.BytesIO()
-        image.save(buffered, format=image.format if hasattr(image, 'format') else "PNG")
-        img_str = base64.b64encode(buffered.getvalue()).decode()
-        
-        # Store image in session state
-        if "uploaded_image" not in st.session_state:
-            st.session_state.uploaded_image = img_str
-            st.session_state.image_format = image.format if hasattr(image, 'format') else "PNG"
-        
+        # Open and display the uploaded image
+        image = Image.open(uploaded_file).convert("RGB")
+        st.image(image, caption="Uploaded image", use_container_width=True)
+
+        # Save to a temp file so predict_aircraft(path) works
+        suffix = os.path.splitext(uploaded_file.name)[1].lower()
+        if suffix not in [".jpg", ".jpeg", ".png", ".bmp", ".gif"]:
+            suffix = ".png"
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            image.save(tmp.name)
+            temp_path = tmp.name
+
         st.success("Image uploaded successfully!")
+
         with st.chat_message("user"):
-            st.markdown(image)
-            
+            st.markdown("Uploaded an image.")
+
         with st.chat_message("assistant"):
-            response = ""
-            response = "The classified image is" # image classifier 
+            label, conf = predict_aircraft(temp_path)
+            response = f"**Aircraft family:** {label}\n\n**Confidence:** {conf:.2%}"
             st.markdown(response)
-        
+
         # Store the assistant's response
         st.session_state.messages.append({
-            "role": "assistant", 
+            "role": "assistant",
             "content": response,
             "type": "text"
         })
-    
-    # Clear image button
-    if "uploaded_image" in st.session_state:
-        if st.button("Clear Image"):
-            del st.session_state.uploaded_image
-            if "image_format" in st.session_state:
-                del st.session_state.image_format
-            st.rerun()
+
+        # Clean up temp file
+        try:
+            os.remove(temp_path)
+        except Exception:
+            pass
 
 
 # Add a clear chat button in the sidebar
