@@ -58,7 +58,11 @@ with tab1:
 
 with tab2:
     st.header("Image Classification")
-    st.header("Upload Image")
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            if message["type"] == "text":
+                st.markdown(message["content"])
+
     uploaded_file = st.file_uploader(
         "Choose an image file", 
         type=["jpg", "jpeg", "png", "gif", "bmp"],
@@ -68,7 +72,7 @@ with tab2:
     if uploaded_file is not None:
         # Display the uploaded image
         image = Image.open(uploaded_file)
-        st.image(image, caption="Uploaded Image", width=True)
+        st.image(image)
         
         # Convert image to base64 for storage
         buffered = io.BytesIO()
@@ -80,7 +84,21 @@ with tab2:
             st.session_state.uploaded_image = img_str
             st.session_state.image_format = image.format if hasattr(image, 'format') else "PNG"
         
-        st.success("Image uploaded successfully!, classify image")
+        st.success("Image uploaded successfully!")
+        with st.chat_message("user"):
+            st.markdown(image)
+            
+        with st.chat_message("assistant"):
+            response = ""
+            response = "The classified image is" # image classifier 
+            st.markdown(response)
+        
+        # Store the assistant's response
+        st.session_state.messages.append({
+            "role": "assistant", 
+            "content": response,
+            "type": "text"
+        })
     
     # Clear image button
     if "uploaded_image" in st.session_state:
