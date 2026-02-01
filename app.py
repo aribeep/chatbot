@@ -77,7 +77,7 @@ with tab2:
     if uploaded_file is not None:
         # Open and display the uploaded image
         image = Image.open(uploaded_file).convert("RGB")
-        st.image(image, caption="Uploaded image", use_container_width=True)
+        st.image(image, caption="Uploaded image", width=True)
 
         # Save to a temp file so predict_aircraft(path) works
         suffix = os.path.splitext(uploaded_file.name)[1].lower()
