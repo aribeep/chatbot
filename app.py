@@ -8,6 +8,7 @@ import json
 from intent import predict_intent
 from sentiment import predict_sentiment
 from aircraft import predict_aircraft
+from aircraft2 import predict_aircraft_variant_with_cam
 
 with open('word2idx.json', 'r') as file:
         word2idx = json.load(file)
@@ -77,7 +78,7 @@ with tab2:
     if uploaded_file is not None:
         # Open and display the uploaded image
         image = Image.open(uploaded_file).convert("RGB")
-        st.image(image, caption="Uploaded image", width=True)
+        st.image(image, caption="Uploaded image")
 
         # Save to a temp file so predict_aircraft(path) works
         suffix = os.path.splitext(uploaded_file.name)[1].lower()
@@ -94,7 +95,7 @@ with tab2:
             st.markdown("Uploaded an image.")
 
         with st.chat_message("assistant"):
-            label, conf = predict_aircraft(temp_path)
+            label, conf = predict_aircraft(temp_path), predict_aircraft_variant_with_cam(temp_path)
             response = f"**Aircraft family:** {label}\n\n**Confidence:** {conf:.2%}"
             st.markdown(response)
 
