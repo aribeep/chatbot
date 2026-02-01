@@ -8,19 +8,11 @@ import json
 from intent import predict_intent
 from sentiment import predict_sentiment
 from aircraft import predict_aircraft
-from aircraft2 import predict_aircraft_variant
-from flask import Flask, send_from_directory, render_template_string
-import os
+from aircraft2 import predict_aircraft_variant_top3
 
-app = Flask(__name__)
-
-GRADCAM_DIR = os.path.join(os.path.dirname(__file__), "gradcam_outputs")
-os.makedirs(GRADCAM_DIR, exist_ok=True)
-@app.route("/gradcam/<filename>")
-def gradcam_file(filename):
-    return send_from_directory(GRADCAM_DIR, filename)
 with open('word2idx.json', 'r') as file:
         word2idx = json.load(file)
+
 
 # Show title and description.
 st.title("Changi Virtual Assistant")
@@ -33,7 +25,7 @@ st.write(
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-tab1, tab2 = st.tabs(["Intent & Sentiment", "Image Classification"])
+tab1, tab2 = st.tabs(["Intent & Sentiment", "Aircraft Classification"])
 
 with tab1:
     st.header("Intent & Sentiment Analysis")
@@ -59,7 +51,7 @@ with tab1:
             
         with st.chat_message("assistant"):
             response = ""
-            response = "The intent and sentiment is",predict_intent(prompt), predict_sentiment(prompt, word2idx)
+            response = "The intent and sentiment is",predict_intent(prompt),predict_sentiment(prompt, word2idx)
             st.markdown(response)
         
         # Store the assistant's response
@@ -70,7 +62,7 @@ with tab1:
         })
 
 with tab2:
-    st.header("Image Classification")
+    st.header("Aircraft Classification")
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             if message["type"] == "text":
@@ -104,35 +96,20 @@ with tab2:
             st.markdown("Uploaded an image.")
 
         with st.chat_message("assistant"):
-            family_label, family_conf = predict_aircraft(temp_path)
-            variant_result = predict_aircraft_variant(
-            temp_path,
-                checkpoint_path="./aircraft_varient.pt",
-                variants_txt_path="variants.txt"
-        )           
+            label, conf = predict_aircraft(temp_path)
+            varient = predict_aircraft_variant_top3(temp_path)
+            response = (f"**Aircraft family:** {label}\n**Family confidence:** {conf:.2%}\n\n**Predicted variant:** {varient['pred_top1']}\n\n**Top-3 variants:**\n")
+            for v in varient["top3"]:
+                response += f"- {v['label']} ({v['confidence']:.2%})\n"
+            st.markdown(response)
+            
 
-        response = (
-    f"**Aircraft family:** {family_label}\n"
-    f"**Family confidence:** {family_conf:.2%}\n\n"
-    f"**Predicted variant:** {variant_result['pred_top1']}\n\n"
-    f"**Top-3 variants:**\n"
-        )
-
-        for v in variant_result["top3"]:
-            response += f"- {v['label']} ({v['confidence']:.2%})\n"
-                # Store the assistant's response
+    # Store the assistant's response
         st.session_state.messages.append({
             "role": "assistant",
             "content": response,
             "type": "text"
         })
-
-        # Clean up temp file
-        try:
-            os.remove(temp_path)
-        except Exception:
-            pass
-
 
 # Add a clear chat button in the sidebar
 with st.sidebar:
